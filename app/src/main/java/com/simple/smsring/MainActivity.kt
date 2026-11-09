@@ -96,16 +96,37 @@ class MainActivity : AppCompatActivity() {
         
         etNumber.setText(getSharedPreferences("cfg", MODE_PRIVATE).getString("target", ""))
 
-                val need = mutableListOf<String>()
+               val need = mutableListOf<String>()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.RECEIVE_SMS)
         if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.POST_NOTIFICATIONS)
-            // 申请读取音频权限
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.READ_MEDIA_AUDIO)
         } else {
-            // 老版本安卓申请读取存储权限
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
         if (need.isNotEmpty()) ActivityCompat.requestPermissions(this, need.toTypedArray(), 1)
+
+        // 检查悬浮窗权限，没有就引导用户去开
+        checkOverlayPermission()
+    }
+
+    private fun checkOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!android.provider.Settings.canDrawOverlays(this)) {
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("重要权限提醒")
+                    .setMessage("为了保证切到后台也能正常响铃，必须开启“显示在其他应用上层”权限！")
+                    .setPositiveButton("去开启") { _, _ ->
+                        val intent = Intent(
+                            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            android.net.Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+        }
+    }
     }
 }
