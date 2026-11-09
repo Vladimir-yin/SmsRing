@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -42,7 +43,14 @@ class RingService : Service() {
         startForeground(1, notification)
         
         if (player == null) {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            // 读取用户选择的铃声，如果没选，就用系统默认闹钟
+            val customUriString = getSharedPreferences("cfg", MODE_PRIVATE).getString("custom_ringtone", null)
+            val uri = if (customUriString != null) {
+                Uri.parse(customUriString)
+            } else {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            }
+
             player = MediaPlayer().apply {
                 setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build())
                 setDataSource(this@RingService, uri)
