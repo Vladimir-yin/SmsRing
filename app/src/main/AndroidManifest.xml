@@ -12,6 +12,9 @@
         android:label="短信响铃"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+        
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
         <activity
             android:name=".MainActivity"
