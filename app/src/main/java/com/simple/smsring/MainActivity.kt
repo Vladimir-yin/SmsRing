@@ -2,12 +2,14 @@ package com.simple.smsring
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -22,7 +24,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var tvRingtone: TextView
 
-    // 接收选择铃声的结果
     private val pickRingtoneLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val uri: Uri? = result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
@@ -62,12 +63,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 选择铃声按钮
         tvRingtone = TextView(this).apply {
             text = "当前铃声: 系统默认闹钟"
             textSize = 14f
             setPadding(0, 30, 0, 10)
         }
+        
         val btnPickRingtone = Button(this).apply {
             text = "选择专属铃声"
             setOnClickListener {
@@ -96,30 +97,33 @@ class MainActivity : AppCompatActivity() {
         
         etNumber.setText(getSharedPreferences("cfg", MODE_PRIVATE).getString("target", ""))
 
-               val need = mutableListOf<String>()
+        // --- 权限申请逻辑 ---
+        val need = mutableListOf<String>()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.RECEIVE_SMS)
+        
         if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.POST_NOTIFICATIONS)
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.READ_MEDIA_AUDIO)
         } else {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
+        
         if (need.isNotEmpty()) ActivityCompat.requestPermissions(this, need.toTypedArray(), 1)
 
-        // 检查悬浮窗权限，没有就引导用户去开
         checkOverlayPermission()
     }
 
+    // --- 悬浮窗权限检查（独立函数，放在 onCreate 外面） ---
     private fun checkOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!android.provider.Settings.canDrawOverlays(this)) {
-                android.app.AlertDialog.Builder(this)
+            if (!Settings.canDrawOverlays(this)) {
+                AlertDialog.Builder(this)
                     .setTitle("重要权限提醒")
                     .setMessage("为了保证切到后台也能正常响铃，必须开启“显示在其他应用上层”权限！")
                     .setPositiveButton("去开启") { _, _ ->
                         val intent = Intent(
-                            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            android.net.Uri.parse("package:$packageName")
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
                         )
                         startActivity(intent)
                     }
@@ -127,6 +131,5 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
         }
-    }
     }
 }
